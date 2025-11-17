@@ -1,21 +1,35 @@
 import os
 import cv2
 import numpy as np
-from collections import defaultdict
 import random
 import matplotlib.pyplot as plt
 
+import tensorflow as tf
+from keras import Input
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization
+from tensorflow.keras.utils import to_categorical
+from sklearn.preprocessing import LabelEncoder
+
 IMAGE_SIZE = 48
-TEST_DATA_DIR = './images/train'
+TRAIN_DATA_DIR = './images/train'
+VALIDATION_DATA_DIR = './images/validation'
 SUPPORTED_FORMATS = ('.jpg', '.jpeg', '.png', '.bmp')
 SAMPLES_TO_GENERATE_PER_CLASS = 50
+RANDOM_SEED = 42
+
+
+random.seed(RANDOM_SEED)
+np.random.seed(RANDOM_SEED)
+tf.random.set_seed(RANDOM_SEED)
+
 
 def load_emotion_data(data_dir, image_size):
     data_list = []
     labels_list = []
-    
+
     required_shape = (image_size, image_size)
-    
+
     discarded_count = 0
     total_files = 0
 
@@ -52,25 +66,27 @@ def load_emotion_data(data_dir, image_size):
 
     return data_list, labels_list
 
-def data_summary(labels):
+
+def data_summary(labels, dataset_name=""):
     if labels:
         labels_np = np.array(labels)
 
-        print(f"\nPodsumowanie danych")
+        print(f"\nPodsumowanie danych {dataset_name}")
 
         unique_labels, counts = np.unique(labels_np, return_counts=True)
         emotion_counts = dict(zip(unique_labels, counts))
 
         print(f"\nLiczba etykiet: {labels_np.shape[0]}")
 
-        print("\nLiczebność dla każdej emocji:")
+        print("Liczebność dla każdej emocji:")
 
         for label, count in emotion_counts.items():
             print(f"  - {label:<10}: {count} obrazów")
 
         print(f"\nCałkowita liczba klas: {len(unique_labels)}")
     else:
-        print("\nBrak danych do przetworzenia.")
+        print(f"\nBrak danych do przetworzenia w zestawie {dataset_name}.")
+
 
 def visualize_data_balance(labels, title_suffix):
     labels_np = np.array(labels)
@@ -100,108 +116,139 @@ def visualize_data_balance(labels, title_suffix):
     plt.tight_layout()
     plt.show()
 
-def augment_data(data_list, labels_list, samples_per_label, img_size):
 
-    augmented_data = []
-    augmented_labels = []
+def preprocess_data(data_list, labels_list, image_size, label_encoder=None):
 
-    augmentation_pairs_map = defaultdict(list)
+    if not data_list:
+        print("Brak danych do przetworzenia.")
+        return None, None, None, None
 
-    grouped_images = defaultdict(list)
-    for img, label in zip(data_list, labels_list):
-        grouped_images[label].append(img)
+    # konwersja i normalizacja
+    X = np.array(data_list, dtype='float32')
+    X = X.reshape(-1, image_size, image_size, 1)
+    X /= 255.0
 
-    print(f"\nAugmentacja danych (Generowanie {samples_per_label} próbek na klasę)...")
+    # kodowanie etykiet
+    if label_encoder is None:
+        le = LabelEncoder()
+        Y_int = le.fit_transform(labels_list)
+        emotion_labels = list(le.classes_)
+    else:
+        le = label_encoder
+        Y_int = le.transform(labels_list)
+        emotion_labels = list(le.classes_)
 
-    for label, images in grouped_images.items():
-        if not images:
-            continue
+    Y_encoded = to_categorical(Y_int, num_classes=len(emotion_labels))
 
-        samples = random.choices(images, k=samples_per_label)
+    return X, Y_encoded, emotion_labels, le
 
-        for original_img in samples:
-            img = original_img.copy()
+# tworzenie modelu konwolucyjnej sieci neuronowej
+def create_cnn_model(input_shape, num_classes):
+    model = Sequential([
 
-            # Obrót
-            angle = random.uniform(-25, 25)
-            M = cv2.getRotationMatrix2D((img_size / 2, img_size / 2), angle, 1)
-            img = cv2.warpAffine(img, M, (img_size, img_size),
-                                 borderMode=cv2.BORDER_REPLICATE)
+        #warstwy konwolucyjne
 
-            # Skalowanie
-            scale = random.uniform(0.8, 1.2)
-            M = cv2.getRotationMatrix2D((img_size / 2, img_size / 2), 0, scale)
-            img = cv2.warpAffine(img, M, (img_size, img_size),
-                                 borderMode=cv2.BORDER_REPLICATE)
+        # warstwa wejścowa
+        Input(shape=input_shape),
 
-            # Szum Gaussa
-            row, col = img.shape
-            mean = 0
-            std_dev = random.uniform(5, 15)
+        # warstwa 1
+        Conv2D(32, (3, 3), padding='same', activation='relu'), #wykrywanie wzorców
+        BatchNormalization(), #normalizacja w celu przyśpieszenia
+        Conv2D(32, (3, 3), activation='relu'),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)), #zmniejszenie liczby parametrów
+        Dropout(0.25), #zapobieganie przeuczenia
 
-            gauss = np.random.normal(mean, std_dev, (row, col))
-            gauss = gauss.reshape(row, col)
+        # Warstwa 2
+        Conv2D(64, (3, 3), padding='same', activation='relu'),
+        BatchNormalization(),
+        Conv2D(64, (3, 3), activation='relu'),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)),
+        Dropout(0.25),
 
-            noisy_img = img + gauss
-            noisy_img = np.clip(noisy_img, 0, 255).astype('uint8')
+        # Warstwa 3
+        Conv2D(128, (3, 3), padding='same', activation='relu'),
+        BatchNormalization(),
+        Conv2D(128, (3, 3), activation='relu'),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)),
+        Dropout(0.25),
 
-            augmented_data.append(noisy_img)
-            augmented_labels.append(label)
+        # warstwa klasyfikująca
+        Flatten(),
+        Dense(512, activation='relu'),
+        BatchNormalization(),
+        Dropout(0.5),
 
-            augmentation_pairs_map[label].append((original_img, noisy_img))
+        # warstwa wyjściowa
+        Dense(num_classes, activation='softmax')
+    ])
 
-    print(f"Zakończono augmentację. Dodano {len(augmented_data)} nowych próbek.")
+    # kompilacja modelu
+    model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
 
-    data_list.extend(augmented_data)
-    labels_list.extend(augmented_labels)
+    print("\nStruktura Modelu CNN:")
+    model.summary()
 
-    return data_list, labels_list, augmentation_pairs_map
+    return model
 
-def display_augmentation_examples(augmentation_pairs_map, num_examples=3):
+# ładowanie Danych
 
-    all_labels = list(augmentation_pairs_map.keys())
-    examples_to_show = min(num_examples, len(all_labels))
-    selected_labels = random.sample(all_labels, examples_to_show)
+raw_train_data, raw_train_labels = load_emotion_data(TRAIN_DATA_DIR, IMAGE_SIZE)
+raw_val_data, raw_val_labels = load_emotion_data(VALIDATION_DATA_DIR, IMAGE_SIZE)
 
-    fig, axes = plt.subplots(examples_to_show, 2, figsize=(8, 4 * examples_to_show))
+data_summary(raw_train_labels, "TRENINGOWY")
+data_summary(raw_val_labels, "WALIDACYJNY")
 
-    if examples_to_show == 1:
-        axes = np.array([axes])
-
-    for i, label in enumerate(selected_labels):
-        if augmentation_pairs_map.get(label):
-            original_img, augmented_img = random.choice(augmentation_pairs_map[label])
-
-            axes[i, 0].imshow(original_img, cmap='gray')
-            axes[i, 0].set_title(f"Oryginał: {label}")
-            axes[i, 0].axis('off')
-
-            axes[i, 1].imshow(augmented_img, cmap='gray')
-            axes[i, 1].set_title(f"Augmentacja: {label}")
-            axes[i, 1].axis('off')
-
-    plt.tight_layout()
-    plt.show()
+if not raw_train_labels or not raw_val_labels:
+    print("\nNie można kontynuować: brak danych")
+else:
+    visualize_data_balance(raw_train_labels, " (Treningowy)")
+    visualize_data_balance(raw_val_labels, " (Walidacyjny)")
 
 
-raw_data, raw_labels = load_emotion_data(TEST_DATA_DIR, IMAGE_SIZE)
+    print("\nPre-processing danych")
 
-data_summary(raw_labels)
-if raw_labels:
-    visualize_data_balance(raw_labels, "")
-
-'''
-if raw_data:
-    raw_data, raw_labels, augmentation_pairs_map = augment_data(
-        raw_data,
-        raw_labels,
-        SAMPLES_TO_GENERATE_PER_CLASS,
-        IMAGE_SIZE
+    X_train, Y_train, emotion_labels, label_encoder = preprocess_data(
+        raw_train_data,
+        raw_train_labels,
+        IMAGE_SIZE,
+        label_encoder=None
     )
 
-    display_augmentation_examples(augmentation_pairs_map, num_examples=3)
+    print(f"Kształt danych treningowych: {X_train.shape}")
+    print(f"Kształt etykiet treningowych: {Y_train.shape}")
+    print(f"Klasy: {emotion_labels}")
 
-data_summary(raw_labels)
-if raw_labels:
-    visualize_data_balance(raw_labels, "(PO Augmentacji)")
+
+    X_val, Y_val, _, _ = preprocess_data(
+        raw_val_data,
+        raw_val_labels,
+        IMAGE_SIZE,
+        label_encoder=label_encoder
+    )
+
+    print(f"Kształt danych walidacyjnych (X_val): {X_val.shape}")
+    print(f"Kształt etykiet walidacyjnych (Y_val): {Y_val.shape}")
+
+    ## tworzenie modelu
+    print("\nTworzenie Modelu CNN")
+    input_shape = X_train.shape[1:]  # (48, 48, 1)
+    num_classes = len(emotion_labels)
+
+    model = create_cnn_model(input_shape, num_classes)
+
+    print("\nKonfiguracja modelu zakończona pomyślnie - model jest gotowy do treningu.")
+
+'''
+    print("\n--- Rozpoczęcie Treningu (Przykładowa konfiguracja) ---")
+    history = model.fit(
+        X_train, Y_train,
+        batch_size=64,
+        epochs=3,
+        validation_data=(X_val, Y_val)
+    )
 '''

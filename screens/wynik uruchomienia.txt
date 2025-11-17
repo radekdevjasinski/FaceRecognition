@@ -1,0 +1,116 @@
+"C:\Users\radek\Documents\Projekty\Face recognition\.venv\Scripts\python.exe" "C:\Users\radek\Documents\Projekty\Face recognition\main.py" 
+2025-11-17 02:29:25.970336: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-11-17 02:29:27.342520: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+Ładowanie danych z: ./images/train
+
+Załadowano 28821 obrazów.
+Liczba pominiętych plików: 0
+Ładowanie danych z: ./images/validation
+
+Załadowano 7066 obrazów.
+Liczba pominiętych plików: 0
+
+Podsumowanie danych TRENINGOWY
+
+Liczba etykiet: 28821
+Liczebność dla każdej emocji:
+  - angry     : 3993 obrazów
+  - disgust   : 436 obrazów
+  - fear      : 4103 obrazów
+  - happy     : 7164 obrazów
+  - neutral   : 4982 obrazów
+  - sad       : 4938 obrazów
+  - surprise  : 3205 obrazów
+
+Całkowita liczba klas: 7
+
+Podsumowanie danych WALIDACYJNY
+
+Liczba etykiet: 7066
+Liczebność dla każdej emocji:
+  - angry     : 960 obrazów
+  - disgust   : 111 obrazów
+  - fear      : 1018 obrazów
+  - happy     : 1825 obrazów
+  - neutral   : 1216 obrazów
+  - sad       : 1139 obrazów
+  - surprise  : 797 obrazów
+
+Całkowita liczba klas: 7
+
+Pre-processing danych
+Kształt danych treningowych: (28821, 48, 48, 1)
+Kształt etykiet treningowych: (28821, 7)
+Klasy: [np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad'), np.str_('surprise')]
+Kształt danych walidacyjnych (X_val): (7066, 48, 48, 1)
+Kształt etykiet walidacyjnych (Y_val): (7066, 7)
+
+Tworzenie Modelu CNN
+2025-11-17 02:29:32.538377: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+
+Struktura Modelu CNN:
+Model: "sequential"
+┌─────────────────────────────────┬────────────────────────┬───────────────┐
+│ Layer (type)                    │ Output Shape           │       Param # │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d (Conv2D)                 │ (None, 48, 48, 32)     │           320 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ batch_normalization             │ (None, 48, 48, 32)     │           128 │
+│ (BatchNormalization)            │                        │               │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_1 (Conv2D)               │ (None, 46, 46, 32)     │         9,248 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ batch_normalization_1           │ (None, 46, 46, 32)     │           128 │
+│ (BatchNormalization)            │                        │               │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ max_pooling2d (MaxPooling2D)    │ (None, 23, 23, 32)     │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dropout (Dropout)               │ (None, 23, 23, 32)     │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_2 (Conv2D)               │ (None, 23, 23, 64)     │        18,496 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ batch_normalization_2           │ (None, 23, 23, 64)     │           256 │
+│ (BatchNormalization)            │                        │               │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_3 (Conv2D)               │ (None, 21, 21, 64)     │        36,928 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ batch_normalization_3           │ (None, 21, 21, 64)     │           256 │
+│ (BatchNormalization)            │                        │               │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ max_pooling2d_1 (MaxPooling2D)  │ (None, 10, 10, 64)     │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dropout_1 (Dropout)             │ (None, 10, 10, 64)     │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_4 (Conv2D)               │ (None, 10, 10, 128)    │        73,856 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ batch_normalization_4           │ (None, 10, 10, 128)    │           512 │
+│ (BatchNormalization)            │                        │               │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_5 (Conv2D)               │ (None, 8, 8, 128)      │       147,584 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ batch_normalization_5           │ (None, 8, 8, 128)      │           512 │
+│ (BatchNormalization)            │                        │               │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ max_pooling2d_2 (MaxPooling2D)  │ (None, 4, 4, 128)      │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dropout_2 (Dropout)             │ (None, 4, 4, 128)      │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ flatten (Flatten)               │ (None, 2048)           │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dense (Dense)                   │ (None, 512)            │     1,049,088 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ batch_normalization_6           │ (None, 512)            │         2,048 │
+│ (BatchNormalization)            │                        │               │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dropout_3 (Dropout)             │ (None, 512)            │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ dense_1 (Dense)                 │ (None, 7)              │         3,591 │
+└─────────────────────────────────┴────────────────────────┴───────────────┘
+ Total params: 1,342,951 (5.12 MB)
+ Trainable params: 1,341,031 (5.12 MB)
+ Non-trainable params: 1,920 (7.50 KB)
+
+Konfiguracja modelu zakończona pomyślnie - model jest gotowy do treningu.
+
+Process finished with exit code 0
