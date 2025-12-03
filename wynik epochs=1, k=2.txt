@@ -1,0 +1,62 @@
+Ładowanie danych z: ./images
+
+Załadowano 35887 obrazów.
+Liczba pominiętych plików: 0
+
+Podsumowanie danych
+
+Liczba etykiet: 35887
+Liczebność dla każdej emocji:
+  - angry     : 4953 obrazów
+  - disgust   : 547 obrazów
+  - fear      : 5121 obrazów
+  - happy     : 8989 obrazów
+  - neutral   : 6198 obrazów
+  - sad       : 6077 obrazów
+  - surprise  : 4002 obrazów
+
+Całkowita liczba klas: 7
+
+Pre-processing danych
+Klasy: [np.str_('angry'), np.str_('disgust'), np.str_('fear'), np.str_('happy'), np.str_('neutral'), np.str_('sad'), np.str_('surprise')]
+Liczba klas: 7
+
+Podział Danych (Trening/Test): 90% / 10%
+Rozmiar zbioru treningowego: 32298 (90%)
+Rozmiar zbioru testowego: 3589 (10%)
+
+Rozpoczęcie Walidacji Krzyżowej (k=2)
+
+Przebieg (Fold) 1/2
+253/253 ━━━━━━━━━━━━━━━━━━━━ 51s 193ms/step - accuracy: 0.2961 - loss: 2.1525 - mae: 0.2152 - mse: 0.1278 - precision: 0.3535 - recall: 0.1653 - val_accuracy: 0.1849 - val_loss: 2.3948 - val_mae: 0.2365 - val_mse: 0.1425 - val_precision: 0.2958 - val_recall: 0.0156
+  -> Wynik Walidacji dla Fold 1:
+    - Loss: 2.3948, Accuracy: 0.1849
+    - Precision: 0.2958, Recall: 0.0156
+    - MSE: 0.1425, MAE: 0.2365
+
+Przebieg (Fold) 2/2
+253/253 ━━━━━━━━━━━━━━━━━━━━ 49s 186ms/step - accuracy: 0.2850 - loss: 2.1955 - mae: 0.2173 - mse: 0.1298 - precision: 0.3448 - recall: 0.1629 - val_accuracy: 0.1764 - val_loss: 2.0625 - val_mae: 0.2352 - val_mse: 0.1291 - val_precision: 0.1818 - val_recall: 0.0020
+  -> Wynik Walidacji dla Fold 2:
+    - Loss: 2.0625, Accuracy: 0.1764
+    - Precision: 0.1818, Recall: 0.0020
+    - MSE: 0.1291, MAE: 0.2352
+
+Podsumowanie Walidacji Krzyżowej
+Średnia Dokładność (Accuracy) po 2 przebiegach: 0.1807 (±0.0042)
+Średnia Strata (Loss) po 2 przebiegach: 2.2286 (±0.1662)
+Średnia Precyzja (Precision): 0.2388 (±0.0570)
+Średnia Czułość (Recall): 0.0088 (±0.0068)
+
+Ocena na Zbiorze Testowym
+
+Trening ostatecznego modelu na pełnym zbiorze treningowym...
+505/505 ━━━━━━━━━━━━━━━━━━━━ 90s 172ms/step - accuracy: 0.3428 - loss: 1.8975 - mae: 0.2071 - mse: 0.1174 - precision: 0.4456 - recall: 0.1893
+
+Wyniki na Zbiorze Testowym (10%):
+  - Loss: 1.6017, Accuracy: 0.3959
+  - Precision: 0.7141, Recall: 0.1385
+  - MSE: 0.1041, MAE: 0.2056
+
+Trening zakończony
+
+Process finished with exit code 0
