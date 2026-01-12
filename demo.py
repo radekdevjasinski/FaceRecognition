@@ -4,13 +4,11 @@ import cv2
 import numpy as np
 import os
 from tensorflow.keras.models import load_model
-from collections import deque, Counter
 
-MODEL_PATH = 'emotion_cnn_model.h5'
+MODEL_PATH = 'emotion_cnn_model_v2.h5'
 IMAGE_SIZE = 48
 EMOTION_LABELS = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
-BUFFER_SIZE = 30
-FRAME_SKIP = 10
+FRAME_SKIP = 60
 
 class EmotionApp:
     def __init__(self, root):
@@ -19,57 +17,48 @@ class EmotionApp:
         self.root.geometry("450x350")
         self.root.resizable(False, False)
         self.model = None
-        # detektor twarzy opencv
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-        self.emotion_history = deque(maxlen=BUFFER_SIZE)
         self.display_text = "Inicjalizacja..."
 
         self._setup_ui()
         self.root.after(200, self._load_resources)
 
     def _setup_ui(self):
-        # glowny kontener
         main_frame = tk.Frame(self.root, padx=20, pady=20)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         title_label = tk.Label(main_frame, text="Wykrywanie emocji", font=("Arial", 16, "bold"))
         title_label.pack(pady=(0, 20))
 
-        # status
         self.status_var = tk.StringVar()
         self.status_var.set("Inicjalizacja...")
         self.status_label = tk.Label(main_frame, textvariable=self.status_var, fg="gray", font=("Arial", 10))
         self.status_label.pack(pady=(0, 20))
 
-        # przyciski
         buttons_frame = tk.Frame(main_frame)
         buttons_frame.pack()
 
-        # kamera
         self.btn_camera = tk.Button(buttons_frame, text="Uruchom Kamerę (na żywo)",
                                     command=self.start_camera_action,
                                     width=25, height=2, font=("Arial", 11), state=tk.DISABLED, bg="#e1e1e1")
         self.btn_camera.pack(pady=10)
 
-        # zdjecia
         self.btn_image = tk.Button(buttons_frame, text="Wczytaj Zdjęcie z pliku...",
                                    command=self.load_image_action,
                                    width=25, height=2, font=("Arial", 11), state=tk.DISABLED, bg="#e1e1e1")
         self.btn_image.pack(pady=10)
 
-        # wyjscie
         btn_quit = tk.Button(main_frame, text="Zakończ", command=self.root.quit, font=("Arial", 10))
         btn_quit.pack(side=tk.BOTTOM, pady=(20, 0))
 
     def _load_resources(self):
         self.status_var.set("Ładowanie modelu.")
         self.status_label.config(fg="blue")
-        self.root.update_idletasks()  # odśwież interfejs
+        self.root.update_idletasks()
 
         try:
             self.model = load_model(MODEL_PATH)
-
             self.status_var.set("Model gotowy.")
             self.status_label.config(fg="green")
             self.btn_camera.config(state=tk.NORMAL, bg="#d0f0c0")
@@ -102,8 +91,7 @@ class EmotionApp:
         self.root.update()
 
         cap = cv2.VideoCapture(0)
-        self.emotion_history.clear()
-        self.display_text = "Analizuję..."  # Czytelniejszy tekst startowy
+        self.display_text = "Analizuję..."
         frame_count = 0
 
         if not cap.isOpened():
@@ -120,34 +108,18 @@ class EmotionApp:
             faces = self.face_cascade.detectMultiScale(gray_frame, scaleFactor=1.3, minNeighbors=5)
 
             for (x, y, w, h) in faces:
-                # analiza co kilka klatek
                 if frame_count % FRAME_SKIP == 0:
-                    # POPRAWIONE WYCINANIE:
                     face_roi = frame[y:y + h, x:x + w]
-
-                    # detekcja emocji
                     current_emotion, confidence = self.predict_emotion(face_roi)
+                    self.display_text = f"{current_emotion.upper()} ({confidence:.1f}%)"
 
-                    if confidence > 30:
-                        self.emotion_history.append(current_emotion)
-
-                    # Wybór stabilnej emocji z bufora
-                    if self.emotion_history:
-                        stable_emotion = Counter(self.emotion_history).most_common(1)[0][0]
-                        self.display_text = f"{stable_emotion.upper()} ({confidence:.1f}%)"
-
-                # 2. RYSOWANIE (w każdej klatce dla płynności)
-                color = (0, 255, 0) if "display_text" in dir(self) else (255, 255, 255)
-
-                # Rysowanie ramki
+                color = (0, 255, 0)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-                # Tło napisu
                 cv2.rectangle(frame, (x, y - 25), (x + w, y), color, -1)
-                # Napis (używa self.display_text zaktualizowanego w punkcie 1)
                 cv2.putText(frame, self.display_text, (x + 5, y - 7),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
 
-            cv2.imshow('Podglad Kamery - Stabilizacja Aktywna', frame)
+            cv2.imshow('Podglad Kamery', frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'): break
 
@@ -158,7 +130,7 @@ class EmotionApp:
 
         cap.release()
         cv2.destroyAllWindows()
-        # Przywróć status tylko jeśli okno nadal istnieje
+
         try:
             self.status_var.set("Model gotowy do pracy.")
             self.status_label.config(fg="green")
@@ -174,7 +146,7 @@ class EmotionApp:
         )
 
         if not file_path:
-            return  # Użytkownik anulował wybór
+            return
 
         self.status_var.set(f"Przetwarzanie: {os.path.basename(file_path)}")
         self.root.update()
@@ -199,18 +171,14 @@ class EmotionApp:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 3)
                 cv2.putText(frame, display_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
 
-            cv2.imshow('Wynik analizy zdjecia (Nacisnij dowolny klawisz)', frame)
-            cv2.waitKey(0)  # Czekaj na dowolny klawisz
+            cv2.imshow('Wynik analizy zdjecia', frame)
+            cv2.waitKey(0)
             cv2.destroyAllWindows()
 
         self.status_var.set("Model gotowy do pracy.")
         self.status_label.config(fg="green")
 
-
 if __name__ == "__main__":
-    # Tworzenie głównego okna Tkinter
     root = tk.Tk()
-    # Inicjalizacja aplikacji
     app = EmotionApp(root)
-    # Uruchomienie pętli głównej interfejsu
     root.mainloop()
