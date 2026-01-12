@@ -17,10 +17,10 @@ IMAGE_SIZE = 48
 ALL_DATA_DIR = './images'
 SUPPORTED_FORMATS = ('.jpg', '.jpeg', '.png', '.bmp')
 RANDOM_SEED = 42
-EPOCHS = 20
+EPOCHS = 50
 BATCH_SIZE = 64
 TEST_SPLIT_RATIO = 0.1
-MODEL_SAVE_PATH = 'emotion_cnn_model.h5'  # sciezka zapisu modelu
+MODEL_SAVE_PATH = 'emotion_cnn_model_v2.h5'  # sciezka zapisu modelu
 
 # ustawienie ziarna losowosci
 random.seed(RANDOM_SEED)

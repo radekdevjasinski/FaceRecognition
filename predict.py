@@ -83,11 +83,11 @@ def predict_and_display_results(model, X_pred, raw_images, filenames, emotion_la
     print("\n wyniki predykcji ")
 
     num_images = len(filenames)
-    # przygotowanie do wyswietlania (maksymalnie 4 obrazy w rzedzie)
-    cols = 4
+    # przygotowanie do wyswietlania (maksymalnie 3 obrazy w rzedzie)
+    cols = 3
     rows = int(np.ceil(num_images / cols))
 
-    plt.figure(figsize=(cols * 4, rows * 4))  # dopasowanie rozmiaru okna do liczby obrazow
+    plt.figure(figsize=(cols * 3, rows * 3))  # dopasowanie rozmiaru okna do liczby obrazow
 
     for i in range(num_images):
         filename = filenames[i]
