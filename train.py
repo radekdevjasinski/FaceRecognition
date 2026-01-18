@@ -20,7 +20,7 @@ RANDOM_SEED = 42
 EPOCHS = 50
 BATCH_SIZE = 64
 TEST_SPLIT_RATIO = 0.1
-MODEL_SAVE_PATH = 'emotion_cnn_model_v2.h5'  # sciezka zapisu modelu
+MODEL_SAVE_PATH = 'emotion_cnn_model_v2.h5'
 
 # ustawienie ziarna losowosci
 random.seed(RANDOM_SEED)
