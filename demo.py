@@ -57,17 +57,17 @@ class EmotionApp:
         btn_quit = tk.Button(main_frame, text="Zakończ", command=self.root.quit, font=("Arial", 10))
         btn_quit.pack(side=tk.BOTTOM, pady=(20, 0))
 
-    # ladowanie modelu
+
     def _load_resources(self):
         self.status_var.set("Ładowanie modelu.")
         self.status_label.config(fg="blue")
         self.root.update_idletasks()
         try:
-            # tensorflow load_model()
+
             self.model = load_model(MODEL_PATH)
             self.status_var.set("Model gotowy.")
             self.status_label.config(fg="green")
-            # odblokuj przyciski akcji
+ 
             self.btn_camera.config(state=tk.NORMAL, bg="#d0f0c0")
             self.btn_image.config(state=tk.NORMAL, bg="#d0f0c0")
         except Exception as e:
@@ -84,15 +84,15 @@ class EmotionApp:
         face_img = np.expand_dims(face_img, axis=-1)
         return face_img
 
-    # wykonanie predycji emocji poprzez wytrenowany model
+
     def predict_emotion(self, face_roi):
-        # dostosowanie zdjecia do modelu
+
         processed_face = self.preprocess_face(face_roi)
 
-        # predykcja emocji
+
         prediction = self.model.predict(processed_face, verbose=0)
 
-        # wypisanie emocji z ktora posiada najwieksza pewnosc
+
         emotion_idx = np.argmax(prediction)
         confidence = np.max(prediction) * 100
         return EMOTION_LABELS[emotion_idx], confidence
@@ -103,7 +103,7 @@ class EmotionApp:
         self.status_var.set("Kamera aktywna")
         self.root.update()
 
-        # uzycie kamery poprzez opencv
+
         cap = cv2.VideoCapture(0)
         self.display_text = "Analizuję..."
         frame_count = 0
@@ -113,21 +113,21 @@ class EmotionApp:
             self.status_var.set("Model gotowy.")
             return
 
-        # dla kazdej klatki
+
         while True:
-            # pobierz klatke kamery
+
             ret, frame = cap.read()
             if not ret: break
 
             frame_count += 1
 
-            # wykryj twarze z obrazu kamery
+
             gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             faces = self.face_cascade.detectMultiScale(gray_frame, scaleFactor=1.3, minNeighbors=5)
 
-            #dla kazdej twarzy wykryj emocje i narysuj ramke
+
             for (x, y, w, h) in faces:
-                # wykonuj czynnosc raz na FRAME_SKIP klatek
+ 
                 if frame_count % FRAME_SKIP == 0:
                     face_roi = frame[y:y + h, x:x + w]
                     current_emotion, confidence = self.predict_emotion(face_roi)
@@ -159,7 +159,7 @@ class EmotionApp:
     def load_image_action(self):
         if not self.model: return
 
-        # wybranie zdjecia z folderu
+
         file_path = filedialog.askopenfilename(
             title="Wybierz plik obrazu",
             filetypes=[("Pliki obrazów", "*.jpg *.jpeg *.png *.bmp"), ("Wszystkie pliki", "*.*")]
@@ -170,7 +170,7 @@ class EmotionApp:
         self.status_var.set(f"Przetwarzanie: {os.path.basename(file_path)}")
         self.root.update()
 
-        # odczytanie zdjecia przez opencv
+
         frame = cv2.imread(file_path)
         if frame is None:
             messagebox.showerror("Błąd", "Nie udało się wczytać wybranego pliku jako obrazu.")
@@ -179,23 +179,22 @@ class EmotionApp:
 
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # wykrycie twarzy na zdjeciu przez opencv
+
         faces = self.face_cascade.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=5)
 
         if len(faces) == 0:
             messagebox.showinfo("Info", "Nie wykryto żadnej twarzy na zdjęciu.")
         else:
-            # wykonaj wykrycie emocji dla kazdej twarzy
             for (x, y, w, h) in faces:
                 face_roi = frame[y:y + h, x:x + w]
                 emotion_text, confidence = self.predict_emotion(face_roi)
                 display_text = f"{emotion_text} ({confidence:.1f}%)"
 
-                # stworzenie ramki wokol twarzy z etykieta emocji
+     
                 cv2.rectangle(frame, (x, y), (x + w, y + h), COLOR_IMAGE, 3)
                 cv2.putText(frame, display_text, (x, y - 10), FONT_TYPE, 0.9, COLOR_IMAGE, 2)
 
-            # wyswietlenie zdjecia z rozpoznana emocja
+
             cv2.imshow('Wynik analizy zdjecia', frame)
             cv2.waitKey(0)
             cv2.destroyAllWindows()

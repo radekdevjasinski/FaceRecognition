@@ -62,12 +62,12 @@ def predict_and_display_results(model, X_pred, raw_images, filenames, emotion_la
     images_per_plot = 9
     max_plots = 3
 
-    # Pętla generująca maksymalnie 3 osobne wykresy
+
     for plot_idx in range(max_plots):
         start_idx = plot_idx * images_per_plot
         end_idx = start_idx + images_per_plot
 
-        # Jeśli nie ma więcej obrazów do wyświetlenia, przerwij
+  
         if start_idx >= num_images:
             break
 
@@ -86,17 +86,17 @@ def predict_and_display_results(model, X_pred, raw_images, filenames, emotion_la
             predicted_emotion = emotion_labels[predicted_index]
             confidence = predictions[i][predicted_index] * 100
 
-            # Log konsoli
+          
             print(f"[{filename}] -> {predicted_emotion} ({confidence:.2f}%)")
 
-            # Dodawanie do subplotu
+  
             plt.subplot(3, 3, subplot_pos)
             plt.imshow(raw_images[i], cmap='gray')
             plt.title(f"Pred: {predicted_emotion}\nConf: {confidence:.1f}%", fontsize=10)
             plt.axis('off')
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.show()  # Wyświetla aktualne okno (9 obrazów)
+        plt.show()  
 
 
 if __name__ == "__main__":

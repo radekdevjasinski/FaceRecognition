@@ -29,14 +29,14 @@ TEST_SPLIT_RATIO = 0.1
 MODEL_SAVE_PATH = 'emotion_cnn_model_v3.h5'
 VALIDATION = False
 
-# ustawienie ziarna losowosci
+
 random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
 tf.random.set_seed(RANDOM_SEED)
 
 
 def load_emotion_data(data_dir, image_size):
-    # wczytuje obrazy z podfolderow
+
     data_list = []
     labels_list = []
 
@@ -46,7 +46,7 @@ def load_emotion_data(data_dir, image_size):
 
     print(f"ladowanie danych z: {data_dir}")
 
-    # przechodzenie przez podfoldery (etykiety emocji)
+
     for emotion_label in os.listdir(data_dir):
         emotion_path = os.path.join(data_dir, emotion_label)
 
@@ -57,7 +57,7 @@ def load_emotion_data(data_dir, image_size):
 
                     image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
 
-                    # weryfikacja poprawnosci wczytanego obrazu
+
                     if image is None or image.ndim != 2 or image.shape != required_shape:
                         discarded_count += 1
                         continue
@@ -71,7 +71,7 @@ def load_emotion_data(data_dir, image_size):
     return data_list, labels_list
 
 def create_augmentation_layers():
-    # tworzy blok warstw do augmentacji danych
+
     return Sequential([
         RandomRotation(factor=0.1, fill_mode='reflect', seed=RANDOM_SEED),
         RandomTranslation(height_factor=0.1, width_factor=0.1, fill_mode='reflect', seed=RANDOM_SEED),
@@ -80,7 +80,7 @@ def create_augmentation_layers():
     ], name="data_augmentation")
 
 def visualize_augmentation_effect(X_data, augmentation_model, num_samples=5):
-    # wyswietla obrazy przed i po augmentacji
+
     plt.figure(figsize=(12, 4 * num_samples))
 
     indices = np.random.choice(len(X_data), num_samples, replace=False)
@@ -106,7 +106,6 @@ def visualize_augmentation_effect(X_data, augmentation_model, num_samples=5):
     plt.show()
 
 def data_summary(labels):
-    # wyswietla podsumowanie klas
     if labels:
         labels_np = np.array(labels)
         unique_labels, counts = np.unique(labels_np, return_counts=True)
@@ -124,7 +123,6 @@ def data_summary(labels):
 
 
 def visualize_data_balance(labels, title_suffix):
-    # tworzy wykresy balansowania danych
     labels_np = np.array(labels)
     unique_labels, counts = np.unique(labels_np, return_counts=True)
 
@@ -154,24 +152,21 @@ def visualize_data_balance(labels, title_suffix):
 
 
 def preprocess_data(data_list, labels_list, image_size, label_encoder=None):
-    # przetwarza dane: normalizacja, kodowanie etykiet (label encoder + one-hot)
+
     if not data_list:
         print("brak danych do przetworzenia.")
         return None, None, None, None, None
 
-    # Konwersja listy obrazów na tablicę NumPy i zmiana typu danych na zmiennoprzecinkowy
+
     X = np.array(data_list, dtype='float32')
 
-    # Zmiana kształtu macierzy (reshape) do formatu 4D wymaganego przez warstwy Conv2D w TensorFlow/Keras:
-    # (liczba_próbek, wysokość, szerokość, liczba_kanałów).
-    # Parametr -1 automatycznie dopasowuje liczbę próbek, a 1 oznacza pojedynczy kanał (skala szarości).
+
     X = X.reshape(-1, image_size, image_size, 1)
 
-    # Normalizacja (skalowanie) wartości pikseli z zakresu całkowitoliczbowego [0, 255] do zmiennoprzecinkowego [0.0, 1.0].
-    # Zabieg ten stabilizuje proces optymalizacji wag i przyspiesza zbieżność modelu (zbieżność gradientu).
+
     X /= 255.0
 
-    # kodowanie etykiet (label encoding)
+
     if label_encoder is None:
         le = LabelEncoder()
         Y_int = le.fit_transform(labels_list)
@@ -181,24 +176,24 @@ def preprocess_data(data_list, labels_list, image_size, label_encoder=None):
 
     emotion_labels = list(le.classes_)
 
-    # kodowanie one-hot
+
     Y_encoded = to_categorical(Y_int, num_classes=len(emotion_labels))
 
     return X, Y_int, Y_encoded, emotion_labels, le
 
 def plot_confusion_matrix(model, X_test, Y_test_int, emotion_labels):
-    # predykcja dla całego zbioru testowego
+
     print("\nGenerowanie macierzy pomyłek...")
     Y_pred_probs = model.predict(X_test, verbose=0)
     Y_pred_classes = np.argmax(Y_pred_probs, axis=1)
 
-    # macierze
+
     cm = confusion_matrix(Y_test_int, Y_pred_classes)
 
-    # normalizacja
+
     cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
-    # wizualizacja
+
     plt.figure(figsize=(10, 8))
     sns.heatmap(cm_normalized, annot=True, fmt=".2f", cmap="Blues",
                 xticklabels=emotion_labels, yticklabels=emotion_labels)
@@ -208,14 +203,12 @@ def plot_confusion_matrix(model, X_test, Y_test_int, emotion_labels):
     plt.xlabel('Przewidziana etykieta')
     plt.show()
 
-# tworzenie modelu konwolucyjnej sieci neuronowej
-def create_cnn_model(input_shape, num_classes):
-    # sekwencyjny model cnn
-    model = Sequential([
-        # warstwy konwolucyjne
-        Input(shape=input_shape),
 
-        # create_augmentation_layers(),
+def create_cnn_model(input_shape, num_classes):
+
+    model = Sequential([
+
+        Input(shape=input_shape),
 
         Conv2D(32, (3, 3), padding='same', activation='relu'),
         BatchNormalization(),
@@ -238,17 +231,15 @@ def create_cnn_model(input_shape, num_classes):
         MaxPooling2D(pool_size=(2, 2)),
         Dropout(0.25),
 
-        # warstwy geste (dense)
+
         Flatten(),
         Dense(512, activation='relu'),
         BatchNormalization(),
         Dropout(0.5),
 
-        # warstwa wyjsciowa
         Dense(num_classes, activation='softmax')
     ])
 
-    # kompilacja modelu
     model.compile(optimizer='adam',
                   loss='categorical_crossentropy',
                   metrics=[
@@ -276,9 +267,8 @@ def run_k_fold_cross_validation(X_train_data, Y_train_data_int, Y_train_data_one
     for fold, (train_index, val_index) in enumerate(skf.split(X_train_data, Y_train_data_int), 1):
         print(f"\nPrzebieg (Fold) {fold}/{n_splits}")
 
-        # inicjalizacja nowego modelu dla każdego podziału
+
         model = create_cnn_model(input_shape, num_classes)
-        # podział danych na zbiory treningowe i walidacyjne dla danego 'fold'
         X_fold_train, X_fold_val = X_train_data[train_index], X_train_data[val_index]
         Y_fold_train, Y_fold_val = Y_train_data_onehot[train_index], Y_train_data_onehot[val_index]
 
@@ -291,7 +281,6 @@ def run_k_fold_cross_validation(X_train_data, Y_train_data_int, Y_train_data_one
             validation_data=(X_fold_val, Y_fold_val)
         )
 
-        # ocena modelu na zbiorze walidacyjnym z danego 'fold'
         scores = model.evaluate(X_fold_val, Y_fold_val, verbose=0)
 
         loss = scores[0]
@@ -310,7 +299,6 @@ def run_k_fold_cross_validation(X_train_data, Y_train_data_int, Y_train_data_one
         fold_losses.append(loss)
         fold_results.append(scores)
 
-    # obliczenie średniej i odchylenia standardowego
     fold_results_np = np.array(fold_results)
 
     mean_accuracy = np.mean(fold_results_np[:, 1])
@@ -334,10 +322,8 @@ def run_k_fold_cross_validation(X_train_data, Y_train_data_int, Y_train_data_one
 
 
 def visualize_model_predictions(model, X_data, Y_true_int, class_labels, num_samples=9):
-    # Wybór losowych indeksów ze zbioru
     indices = np.random.choice(len(X_data), num_samples, replace=False)
 
-    # Wykonanie predykcji dla wybranych obrazów
     X_samples = X_data[indices]
     predictions = model.predict(X_samples, verbose=0)
 
@@ -348,7 +334,7 @@ def visualize_model_predictions(model, X_data, Y_true_int, class_labels, num_sam
         img = X_data[idx].reshape(IMAGE_SIZE, IMAGE_SIZE)
         true_label = class_labels[Y_true_int[idx]]
 
-        # Pobranie indeksu o najwyższym prawdopodobieństwie
+
         pred_idx = np.argmax(predictions[i])
         pred_label = class_labels[pred_idx]
         confidence = predictions[i][pred_idx] * 100
@@ -356,7 +342,7 @@ def visualize_model_predictions(model, X_data, Y_true_int, class_labels, num_sam
         plt.subplot(3, 3, i + 1)
         plt.imshow(img, cmap='gray')
 
-        # Kolor zielony dla poprawnej predykcji, czerwony dla błędnej
+
         title_color = 'green' if pred_label == true_label else 'red'
 
         plt.title(f"Prawda: {true_label}\nPred: {pred_label} ({confidence:.1f}%)",
@@ -367,7 +353,7 @@ def visualize_model_predictions(model, X_data, Y_true_int, class_labels, num_sam
     plt.show()
 
 
-# glowna logika
+
 all_raw_data, all_raw_labels = load_emotion_data(ALL_DATA_DIR, IMAGE_SIZE)
 
 if not all_raw_labels:
@@ -379,7 +365,7 @@ else:
 
     #print("\npre-processing danych")
 
-    # przetwarzanie calego zbioru (normalizacja, kodowanie etykiet)
+
     X_all, Y_all_int, Y_all_onehot, emotion_labels, label_encoder = preprocess_data(
         all_raw_data,
         all_raw_labels,
@@ -392,12 +378,12 @@ else:
 
     #print(f"\npodzial danych (trening/test): {100 * (1 - TEST_SPLIT_RATIO):.0f}% / {100 * TEST_SPLIT_RATIO:.0f}%")
 
-    # podzial na zbior treningowy i testowy
+
     X_train, X_test, Y_train_int, Y_test_int, Y_train_onehot, Y_test_onehot = train_test_split(
         X_all, Y_all_int, Y_all_onehot,
         test_size=TEST_SPLIT_RATIO,
         random_state=RANDOM_SEED,
-        stratify=Y_all_int  # utrzymanie proporcji klas
+        stratify=Y_all_int  
     )
 
     print(f"rozmiar zbioru treningowego: {X_train.shape[0]}")
@@ -406,7 +392,6 @@ else:
     input_shape = X_train.shape[1:]  # (48, 48, 1)
     num_classes = len(emotion_labels)
     if VALIDATION:
-        #walidacja krzyzowa
         mean_acc, std_acc = run_k_fold_cross_validation(
             X_train, Y_train_int, Y_train_onehot,
             input_shape, num_classes,
@@ -414,7 +399,6 @@ else:
             batch_size=BATCH_SIZE
         )
 
-    # tworzenie i trening modelu na zbiorze treningowym
     final_model = create_cnn_model(input_shape, num_classes)
 
     #print("\nwizualizacja wplywu augmentacji na dane treningowe...")
@@ -445,7 +429,6 @@ else:
     print(f"  - precision: {precision_test:.4f}, recall: {recall_test:.4f}")
     print(f"  - mse: {mse_test:.4f}, mae: {mae_test:.4f}")
 
-    # zapisanie modelu
     try:
         final_model.save(MODEL_SAVE_PATH)
         print(f"\nmodel zostal zapisany jako: {MODEL_SAVE_PATH}")
@@ -454,7 +437,6 @@ else:
 
     print("\ntrening zakonczony")
 
-    # Prezentacja predykcji na zbiorze testowym (walidacyjnym)
     print("\nGenerowanie wizualizacji predykcji...")
     visualize_model_predictions(
         final_model,
