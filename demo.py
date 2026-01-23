@@ -6,9 +6,14 @@ import os
 from tensorflow.keras.models import load_model
 
 MODEL_PATH = 'emotion_cnn_model_v2.h5'
+FACE_CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+FONT_TYPE = cv2.FONT_HERSHEY_SIMPLEX
 IMAGE_SIZE = 48
 EMOTION_LABELS = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
 FRAME_SKIP = 60
+
+COLOR_CAMERA = (0, 255, 0)
+COLOR_IMAGE = (255, 0, 0)
 
 class EmotionApp:
     def __init__(self, root):
@@ -17,7 +22,7 @@ class EmotionApp:
         self.root.geometry("450x350")
         self.root.resizable(False, False)
         self.model = None
-        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        self.face_cascade = cv2.CascadeClassifier(FACE_CASCADE_PATH)
 
         self.display_text = "Inicjalizacja..."
 
@@ -128,11 +133,10 @@ class EmotionApp:
                     current_emotion, confidence = self.predict_emotion(face_roi)
                     self.display_text = f"{current_emotion.upper()} ({confidence:.1f}%)"
 
-                color = (0, 255, 0)
+                color = COLOR_CAMERA
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
                 cv2.rectangle(frame, (x, y - 25), (x + w, y), color, -1)
-                cv2.putText(frame, self.display_text, (x + 5, y - 7),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
+                cv2.putText(frame, self.display_text, (x + 5, y - 7),FONT_TYPE, 0.6, (0, 0, 0), 2)
 
             cv2.imshow('Podglad Kamery', frame)
 
@@ -188,8 +192,8 @@ class EmotionApp:
                 display_text = f"{emotion_text} ({confidence:.1f}%)"
 
                 # stworzenie ramki wokol twarzy z etykieta emocji
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 3)
-                cv2.putText(frame, display_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), COLOR_IMAGE, 3)
+                cv2.putText(frame, display_text, (x, y - 10), FONT_TYPE, 0.9, COLOR_IMAGE, 2)
 
             # wyswietlenie zdjecia z rozpoznana emocja
             cv2.imshow('Wynik analizy zdjecia', frame)
@@ -198,6 +202,7 @@ class EmotionApp:
 
         self.status_var.set("Model gotowy do pracy.")
         self.status_label.config(fg="green")
+        
 
 if __name__ == "__main__":
     root = tk.Tk()
